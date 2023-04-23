@@ -8,13 +8,22 @@ const componentOne = () => {
     e.appendChild(e0);
     return e;
 };
+const componentThree = () => {
+    let e = document.createElement('div');
+    e.setAttribute('id', 'componentThree');
+    let e2 = componentOne() let e3 = document.createElement('h2');
+    e3.textContent = 'Some Text';
+    e2.appendChild(e3);
+    e.appendChild(e2);
+    return e;
+};
 const componentTwo = () => {
     let e = document.createElement('div');
     e.setAttribute('id', 'componentTwo');
-    let e2 = document.createElement('div');
-    let e3 = document.createElement('button');
-    e3.textContent = 'Click me';
-    e2.appendChild(e3);
-    e.appendChild(e2);
+    let e4 = document.createElement('div');
+    let e5 = document.createElement('button');
+    e5.textContent = 'Click me';
+    e4.appendChild(e5);
+    e.appendChild(e4);
     return e;
 };

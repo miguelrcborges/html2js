@@ -92,7 +92,11 @@ func proccessElement(w *bufio.Writer, r *bufio.Reader) int {
 		stuff[0] = stuff[0][:len(stuff[0]) - 1]
 	}
 
-	w.WriteString(fmt.Sprintf("let e%d=document.createElement('%s');", elemNumber, stuff[0]))
+	if isAnHTMLElement(stuff[0]) {
+		w.WriteString(fmt.Sprintf("let e%d=document.createElement('%s');", elemNumber, stuff[0]))
+	} else {
+		w.WriteString(fmt.Sprintf("let e%d=%s()", elemNumber, stuff[0]))
+	}
 
 	textContent, _ := r.ReadString('<')
 	textContent = strings.TrimSpace(textContent)
