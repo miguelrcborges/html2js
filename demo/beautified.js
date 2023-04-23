@@ -11,7 +11,8 @@ const componentOne = () => {
 const componentThree = () => {
     let e = document.createElement('div');
     e.setAttribute('id', 'componentThree');
-    let e2 = componentOne() let e3 = document.createElement('h2');
+    let e2 = componentOne();
+    let e3 = document.createElement('h2');
     e3.textContent = 'Some Text';
     e2.appendChild(e3);
     e.appendChild(e2);
