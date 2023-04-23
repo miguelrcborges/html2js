@@ -59,7 +59,7 @@ func compileComponent(w *bufio.Writer, filePath string) {
 	componentName := strings.Split(fileName, ".")[0]
 	w.Write([]byte("const "))
 	w.WriteString(componentName)
-	w.Write([]byte("=()=>{let e=document.createElement('div');e.setAtrribute('id','"))
+	w.Write([]byte("=()=>{let e=document.createElement('div');e.setAttribute('id','"))
 	w.WriteString(componentName)
 	w.Write([]byte("');"))
 
@@ -102,9 +102,7 @@ func proccessElement(w *bufio.Writer, r *bufio.Reader) int {
 	}
 
 	for {
-		nextTag, _ := r.Peek(len(stuff[0]) + 1)
-		fmt.Println(elemNumber, stuff[0], string(nextTag))
-		if ; bytes.Compare([]byte("/" + stuff[0]), nextTag) == 0 {
+		if nextTag, _ := r.Peek(len(stuff[0]) + 1); bytes.Compare([]byte("/" + stuff[0]), nextTag) == 0 {
 			r.ReadBytes('>')
 			break
 		}

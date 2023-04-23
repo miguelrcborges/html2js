@@ -5,4 +5,4 @@ SRC = $(wildcard *.html)
 build: compiled.js
 
 compiled.js: $(SRC)
-	echo $(SRC) 
+	html2js $(SRC) 
