@@ -43,6 +43,7 @@ func main() {
 	w := bufio.NewWriter(f)
 
 	for _, file := range os.Args[1:] {
+		elementCount = 0;
 		compileComponent(w, file)
 	}
 	err = w.Flush()
@@ -96,6 +97,26 @@ func proccessElement(w *bufio.Writer, r *bufio.Reader) int {
 		w.WriteString(fmt.Sprintf("let e%d=document.createElement('%s');", elemNumber, stuff[0]))
 	} else {
 		w.WriteString(fmt.Sprintf("let e%d=%s();", elemNumber, stuff[0]))
+	}
+
+	for _, prop := range stuff[1:] {
+		split := strings.Split(prop, "=")
+		if len(split) < 2 {
+			continue
+		}
+		// Remove "" of the value
+		if len(split[1]) > 2 {
+			split[1] = split[1][1:len(split[1]) - 1]
+		}
+
+		if split[0] == "class" {
+			classes := strings.Split(split[1], " ")
+			for _, class := range classes {
+				w.WriteString(fmt.Sprintf("e%d.classList.add('%s');", elemNumber, class))
+			} 
+		} else if split[0] == "id" {
+			w.WriteString(fmt.Sprintf("e%d.setAttribute('id', '%s');", elemNumber, split[1]))
+		}
 	}
 
 	textContent, _ := r.ReadString('<')
