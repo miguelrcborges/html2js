@@ -60,7 +60,7 @@ func compileComponent(w *bufio.Writer, filePath string) {
 	componentName := strings.Split(fileName, ".")[0]
 	w.Write([]byte("const "))
 	w.WriteString(componentName)
-	w.Write([]byte("=()=>{let e=document.createElement('div');e.setAttribute('id','"))
+	w.Write([]byte("=()=>{const e=document.createElement('div');e.setAttribute('id','"))
 	w.WriteString(componentName)
 	w.Write([]byte("');"))
 
@@ -94,9 +94,9 @@ func proccessElement(w *bufio.Writer, r *bufio.Reader) int {
 	}
 
 	if isAnHTMLElement(stuff[0]) {
-		w.WriteString(fmt.Sprintf("let e%d=document.createElement('%s');", elemNumber, stuff[0]))
+		w.WriteString(fmt.Sprintf("const e%d=document.createElement('%s');", elemNumber, stuff[0]))
 	} else {
-		w.WriteString(fmt.Sprintf("let e%d=%s();", elemNumber, stuff[0]))
+		w.WriteString(fmt.Sprintf("const e%d=%s();", elemNumber, stuff[0]))
 	}
 
 	for _, prop := range stuff[1:] {
@@ -109,14 +109,7 @@ func proccessElement(w *bufio.Writer, r *bufio.Reader) int {
 			split[1] = split[1][1:len(split[1]) - 1]
 		}
 
-		if split[0] == "class" {
-			classes := strings.Split(split[1], " ")
-			for _, class := range classes {
-				w.WriteString(fmt.Sprintf("e%d.classList.add('%s');", elemNumber, class))
-			} 
-		} else if split[0] == "id" {
-			w.WriteString(fmt.Sprintf("e%d.setAttribute('id', '%s');", elemNumber, split[1]))
-		}
+		w.WriteString(fmt.Sprintf("e%d.setAtrribute('%s','%s');", elemNumber, split[0], split[1]))
 	}
 
 	textContent, _ := r.ReadString('<')
