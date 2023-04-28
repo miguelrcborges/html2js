@@ -10,11 +10,11 @@ import (
 
 var elementCount int
 
-func getHTMLElements() [11]string {
-	return [11]string {
+func getHTMLElements() [15]string {
+	return [15]string {
 		"div", "a", "button", "form",
 		"h1", "h2", "h3", "h4", "h5", "h6",
-		"p", 
+		"p", "ul", "ol", "li", "br",
 	}
 }
 
@@ -109,11 +109,12 @@ func proccessElement(w *bufio.Writer, r *bufio.Reader) int {
 			split[1] = split[1][1:len(split[1]) - 1]
 		}
 
-		w.WriteString(fmt.Sprintf("e%d.setAtrribute('%s','%s');", elemNumber, split[0], split[1]))
+		w.WriteString(fmt.Sprintf("e%d.setAttribute('%s','%s');", elemNumber, split[0], split[1]))
 	}
 
 	textContent, _ := r.ReadString('<')
 	textContent = strings.TrimSpace(textContent)
+	textContent = strings.ReplaceAll(textContent, "\n", " ")
 
 	if len(textContent) > 1 {
 		w.WriteString(fmt.Sprintf("e%d.textContent='%s';", elemNumber, textContent[:len(textContent) - 1]))
