@@ -11,7 +11,7 @@ import (
 var elementCount int
 
 func getHTMLElements() [15]string {
-	return [15]string {
+	return [15]string{
 		"div", "a", "button", "form",
 		"h1", "h2", "h3", "h4", "h5", "h6",
 		"p", "ul", "ol", "li", "br",
@@ -19,7 +19,7 @@ func getHTMLElements() [15]string {
 }
 
 func isAnHTMLElement(e string) bool {
-	elements := getHTMLElements();
+	elements := getHTMLElements()
 	for _, v := range elements {
 		if e == v {
 			return true
@@ -43,7 +43,7 @@ func main() {
 	w := bufio.NewWriter(f)
 
 	for _, file := range os.Args[1:] {
-		elementCount = 0;
+		elementCount = 0
 		compileComponent(w, file)
 	}
 	err = w.Flush()
@@ -65,20 +65,19 @@ func compileComponent(w *bufio.Writer, filePath string) {
 	w.Write([]byte("');"))
 
 	r := bufio.NewReader(f)
-	
+
 	for {
 		_, err := r.ReadBytes('<')
 		if err != nil {
-			break;
-		} 	
+			break
+		}
 
 		num := proccessElement(w, r)
 		w.WriteString(fmt.Sprintf("e.appendChild(e%d);", num))
 	}
 
-	w.Write([]byte("return e;};"))
+	w.Write([]byte("return e;};\n"))
 }
-
 
 func proccessElement(w *bufio.Writer, r *bufio.Reader) int {
 	elemNumber := elementCount
@@ -88,9 +87,9 @@ func proccessElement(w *bufio.Writer, r *bufio.Reader) int {
 
 	// remove the '>' lol
 	if len(stuff) > 1 {
-		stuff[len(stuff) - 1] = stuff[len(stuff) - 1][:len(stuff[len(stuff) - 1]) - 1]
+		stuff[len(stuff)-1] = stuff[len(stuff)-1][:len(stuff[len(stuff)-1])-1]
 	} else {
-		stuff[0] = stuff[0][:len(stuff[0]) - 1]
+		stuff[0] = stuff[0][:len(stuff[0])-1]
 	}
 
 	if isAnHTMLElement(stuff[0]) {
@@ -106,7 +105,7 @@ func proccessElement(w *bufio.Writer, r *bufio.Reader) int {
 		}
 		// Remove "" of the value
 		if len(split[1]) > 2 {
-			split[1] = split[1][1:len(split[1]) - 1]
+			split[1] = split[1][1 : len(split[1])-1]
 		}
 
 		w.WriteString(fmt.Sprintf("e%d.setAttribute('%s','%s');", elemNumber, split[0], split[1]))
@@ -115,13 +114,14 @@ func proccessElement(w *bufio.Writer, r *bufio.Reader) int {
 	textContent, _ := r.ReadString('<')
 	textContent = strings.TrimSpace(textContent)
 	textContent = strings.ReplaceAll(textContent, "\n", " ")
+	textContent = strings.ReplaceAll(textContent, "'", "\\'")
 
 	if len(textContent) > 1 {
-		w.WriteString(fmt.Sprintf("e%d.textContent='%s';", elemNumber, textContent[:len(textContent) - 1]))
+		w.WriteString(fmt.Sprintf("e%d.textContent='%s';", elemNumber, textContent[:len(textContent)-1]))
 	}
 
 	for {
-		if nextTag, _ := r.Peek(len(stuff[0]) + 1); bytes.Compare([]byte("/" + stuff[0]), nextTag) == 0 {
+		if nextTag, _ := r.Peek(len(stuff[0]) + 1); bytes.Equal([]byte("/"+stuff[0]), nextTag) {
 			r.ReadBytes('>')
 			break
 		}
@@ -131,8 +131,8 @@ func proccessElement(w *bufio.Writer, r *bufio.Reader) int {
 		_, err := r.ReadBytes('<')
 
 		if err != nil {
-			break;
-		} 	
+			break
+		}
 	}
 
 	return elemNumber
