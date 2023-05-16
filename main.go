@@ -10,23 +10,6 @@ import (
 
 var elementCount int
 
-func getHTMLElements() [15]string {
-	return [15]string{
-		"div", "a", "button", "form",
-		"h1", "h2", "h3", "h4", "h5", "h6",
-		"p", "ul", "ol", "li", "br",
-	}
-}
-
-func isAnHTMLElement(e string) bool {
-	elements := getHTMLElements()
-	for _, v := range elements {
-		if e == v {
-			return true
-		}
-	}
-	return false
-}
 
 func check(e error) {
 	if e != nil {
