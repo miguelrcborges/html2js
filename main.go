@@ -10,7 +10,6 @@ import (
 
 var elementCount int
 
-
 func check(e error) {
 	if e != nil {
 		panic(e)
@@ -38,28 +37,45 @@ func compileComponent(w *bufio.Writer, filePath string) {
 	check(err)
 	defer f.Close()
 
+	r := bufio.NewReader(f)
+
 	filePathSplitted := strings.Split(filePath, "/")
 	fileName := filePathSplitted[len(filePathSplitted)-1]
 	componentName := strings.Split(fileName, ".")[0]
-	w.Write([]byte("const "))
-	w.WriteString(componentName)
-	w.Write([]byte("=()=>{const e=document.createElement('div');e.setAttribute('id','"))
-	w.WriteString(componentName)
-	w.Write([]byte("');"))
+	variables, err := r.ReadString('<')
+	if err != nil {
+		fmt.Printf("Couldn't compile file %s.\n", fileName)
+		return
+	}
 
-	r := bufio.NewReader(f)
+	w.WriteString(fmt.Sprintf("/**\n * Generates %s component.\n", componentName))
+
+	var variablesNames string
+	for _, v := range strings.Split(variables, "\n") {
+		if v[0] != '-' {
+			continue
+		}
+		w.WriteString(fmt.Sprintf(" * @param %s\n", v[2:]))
+		variablesNames += strings.Split(v, " ")[2] + ","
+	}
+
+	if len(variablesNames) > 0 {
+		variablesNames = variablesNames[:len(variablesNames)-1]
+	}
+
+	w.WriteString(fmt.Sprintf(" * @return Component\n */\nconst %s=(%s)=>{const e=document.createElement('div');e.setAttribute('id','%s');", componentName, variablesNames, componentName))
 
 	for {
+		num := proccessElement(w, r)
+		w.WriteString(fmt.Sprintf("e.appendChild(e%d);", num))
+
 		_, err := r.ReadBytes('<')
 		if err != nil {
 			break
 		}
-
-		num := proccessElement(w, r)
-		w.WriteString(fmt.Sprintf("e.appendChild(e%d);", num))
 	}
 
-	w.Write([]byte("return e;};\n"))
+	w.WriteString("return e;};\n")
 }
 
 func proccessElement(w *bufio.Writer, r *bufio.Reader) int {
