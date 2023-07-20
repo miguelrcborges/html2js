@@ -113,10 +113,11 @@ func proccessElement(w *bufio.Writer, r *bufio.Reader) int {
 	textContent, _ := r.ReadString('<')
 	textContent = strings.TrimSpace(textContent)
 	textContent = strings.ReplaceAll(textContent, "\n", " ")
-	textContent = strings.ReplaceAll(textContent, "'", "\\'")
+	textContent = strings.ReplaceAll(textContent, "\\", "\\\\")
+	textContent = strings.ReplaceAll(textContent, "`", "\\`")
 
 	if len(textContent) > 1 {
-		w.WriteString(fmt.Sprintf("e%d.textContent='%s';", elemNumber, textContent[:len(textContent)-1]))
+		w.WriteString(fmt.Sprintf("e%d.textContent=`%s`;", elemNumber, textContent[:len(textContent)-1]))
 	}
 
 	for {
