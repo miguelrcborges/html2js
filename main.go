@@ -111,7 +111,7 @@ func proccessElement(r *bufio.Reader, out string, count int) (string, int) {
 			split[1] = split[1][1 : len(split[1])-1]
 		}
 
-		out += fmt.Sprintf("e%d.setAttribute('%s','%s');", count, split[0], split[1])
+		out += fmt.Sprintf("e%d.setAttribute('%s','%s');", this_id, split[0], split[1])
 	}
 
 	textContent, _ := r.ReadString('<')
@@ -121,7 +121,7 @@ func proccessElement(r *bufio.Reader, out string, count int) (string, int) {
 	textContent = strings.ReplaceAll(textContent, "`", "\\`")
 
 	if len(textContent) > 1 {
-		out += fmt.Sprintf("e%d.textContent=`%s`;", count, textContent[:len(textContent)-1])
+		out += fmt.Sprintf("e%d.textContent=`%s`;", this_id, textContent[:len(textContent)-1])
 	}
 
 	for {
