@@ -8,12 +8,7 @@ import (
 	"strings"
 )
 
-var elementCount int
-
 func check(e error) {
-	if e != nil {
-		panic(e)
-	}
 }
 
 func main() {
@@ -23,18 +18,25 @@ func main() {
 	defer f.Close()
 
 	w := bufio.NewWriter(f)
+	ch := make(chan string)
 
 	for _, file := range os.Args[1:] {
-		elementCount = 0
-		compileComponent(w, file)
+		go compileComponent(ch, file)
 	}
-	err = w.Flush()
-	check(err)
+
+	for range os.Args[1:] {
+		w.WriteString(<-ch)
+		w.Flush()
+	}
 }
 
-func compileComponent(w *bufio.Writer, filePath string) {
+func compileComponent(ch chan string, filePath string) {
 	f, err := os.Open(filePath)
-	check(err)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Failed to open file %s.\n", filePath)
+		ch <- ""
+		return
+	}
 	defer f.Close()
 
 	r := bufio.NewReader(f)
@@ -48,14 +50,14 @@ func compileComponent(w *bufio.Writer, filePath string) {
 		return
 	}
 
-	w.WriteString(fmt.Sprintf("/**\n * Generates %s component.\n", componentName))
+	output := fmt.Sprintf("/**\n * Generates %s component.\n", componentName)
 
 	var variablesNames string
 	for _, v := range strings.Split(variables, "\n") {
 		if v[0] != '-' {
 			continue
 		}
-		w.WriteString(fmt.Sprintf(" * @param %s\n", v[2:]))
+		output += fmt.Sprintf(" * @param %s\n", v[2:])
 		variablesNames += strings.Split(v, " ")[2] + ","
 	}
 
@@ -63,11 +65,12 @@ func compileComponent(w *bufio.Writer, filePath string) {
 		variablesNames = variablesNames[:len(variablesNames)-1]
 	}
 
-	w.WriteString(fmt.Sprintf(" * @return Component\n */\nconst %s=(%s)=>{const e=document.createElement('div');e.setAttribute('id','%s');", componentName, variablesNames, componentName))
+	output += fmt.Sprintf(" * @return Component\n */\nconst %s=(%s)=>{const e=document.createElement('div');e.setAttribute('id','%s');", componentName, variablesNames, componentName)
 
+	count := 0
 	for {
-		num := proccessElement(w, r)
-		w.WriteString(fmt.Sprintf("e.appendChild(e%d);", num))
+		output, count = proccessElement(r, output, count)
+		output += fmt.Sprintf("e.appendChild(e%d);", count)
 
 		_, err := r.ReadBytes('<')
 		if err != nil {
@@ -75,14 +78,15 @@ func compileComponent(w *bufio.Writer, filePath string) {
 		}
 	}
 
-	w.WriteString("return e;};\n")
+	output += "return e;};\n"
+	ch <- output
 }
 
-func proccessElement(w *bufio.Writer, r *bufio.Reader) int {
-	elemNumber := elementCount
-	elementCount++
+func proccessElement(r *bufio.Reader, out string, count int) (string, int) {
 	wholeTag, _ := r.ReadString('>')
 	stuff := strings.Split(wholeTag, " ")
+	this_id := count
+	count += 1
 
 	// remove the '>' lol
 	if len(stuff) > 1 {
@@ -92,9 +96,9 @@ func proccessElement(w *bufio.Writer, r *bufio.Reader) int {
 	}
 
 	if isAnHTMLElement(stuff[0]) {
-		w.WriteString(fmt.Sprintf("const e%d=document.createElement('%s');", elemNumber, stuff[0]))
+		out += fmt.Sprintf("const e%d=document.createElement('%s');", this_id, stuff[0])
 	} else {
-		w.WriteString(fmt.Sprintf("const e%d=%s();", elemNumber, stuff[0]))
+		out += fmt.Sprintf("const e%d=%s();", this_id, stuff[0])
 	}
 
 	for _, prop := range stuff[1:] {
@@ -107,7 +111,7 @@ func proccessElement(w *bufio.Writer, r *bufio.Reader) int {
 			split[1] = split[1][1 : len(split[1])-1]
 		}
 
-		w.WriteString(fmt.Sprintf("e%d.setAttribute('%s','%s');", elemNumber, split[0], split[1]))
+		out += fmt.Sprintf("e%d.setAttribute('%s','%s');", count, split[0], split[1])
 	}
 
 	textContent, _ := r.ReadString('<')
@@ -117,7 +121,7 @@ func proccessElement(w *bufio.Writer, r *bufio.Reader) int {
 	textContent = strings.ReplaceAll(textContent, "`", "\\`")
 
 	if len(textContent) > 1 {
-		w.WriteString(fmt.Sprintf("e%d.textContent=`%s`;", elemNumber, textContent[:len(textContent)-1]))
+		out += fmt.Sprintf("e%d.textContent=`%s`;", count, textContent[:len(textContent)-1])
 	}
 
 	for {
@@ -126,8 +130,8 @@ func proccessElement(w *bufio.Writer, r *bufio.Reader) int {
 			break
 		}
 
-		num := proccessElement(w, r)
-		w.WriteString(fmt.Sprintf("e%d.appendChild(e%d);", elemNumber, num))
+		out, count = proccessElement(r, out, count)
+		out += fmt.Sprintf("e%d.appendChild(e%d);", this_id, count)
 		_, err := r.ReadBytes('<')
 
 		if err != nil {
@@ -135,5 +139,5 @@ func proccessElement(w *bufio.Writer, r *bufio.Reader) int {
 		}
 	}
 
-	return elemNumber
+	return out, count
 }
