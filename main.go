@@ -67,10 +67,11 @@ func compileComponent(ch chan string, filePath string) {
 
 	output += fmt.Sprintf(" * @return Component\n */\nconst %s=(%s)=>{const e=document.createElement('div');e.setAttribute('id','%s');", componentName, variablesNames, componentName)
 
-	count := 0
+	base_id := 0
 	for {
-		output, count = proccessElement(r, output, count)
-		output += fmt.Sprintf("e.appendChild(e%d);", count)
+		var this int
+		output, base_id, this = proccessElement(r, output, base_id)
+		output += fmt.Sprintf("e.appendChild(e%d);", this)
 
 		_, err := r.ReadBytes('<')
 		if err != nil {
@@ -82,11 +83,9 @@ func compileComponent(ch chan string, filePath string) {
 	ch <- output
 }
 
-func proccessElement(r *bufio.Reader, out string, count int) (string, int) {
+func proccessElement(r *bufio.Reader, out string, id int) (string, int, int) {
 	wholeTag, _ := r.ReadString('>')
 	stuff := strings.Split(wholeTag, " ")
-	this_id := count
-	count += 1
 
 	// remove the '>' lol
 	if len(stuff) > 1 {
@@ -96,9 +95,9 @@ func proccessElement(r *bufio.Reader, out string, count int) (string, int) {
 	}
 
 	if isAnHTMLElement(stuff[0]) {
-		out += fmt.Sprintf("const e%d=document.createElement('%s');", this_id, stuff[0])
+		out += fmt.Sprintf("const e%d=document.createElement('%s');", id, stuff[0])
 	} else {
-		out += fmt.Sprintf("const e%d=%s();", this_id, stuff[0])
+		out += fmt.Sprintf("const e%d=%s();", id, stuff[0])
 	}
 
 	for _, prop := range stuff[1:] {
@@ -111,7 +110,7 @@ func proccessElement(r *bufio.Reader, out string, count int) (string, int) {
 			split[1] = split[1][1 : len(split[1])-1]
 		}
 
-		out += fmt.Sprintf("e%d.setAttribute('%s','%s');", this_id, split[0], split[1])
+		out += fmt.Sprintf("e%d.setAttribute('%s','%s');", id, split[0], split[1])
 	}
 
 	textContent, _ := r.ReadString('<')
@@ -121,17 +120,19 @@ func proccessElement(r *bufio.Reader, out string, count int) (string, int) {
 	textContent = strings.ReplaceAll(textContent, "`", "\\`")
 
 	if len(textContent) > 1 {
-		out += fmt.Sprintf("e%d.textContent=`%s`;", this_id, textContent[:len(textContent)-1])
+		out += fmt.Sprintf("e%d.textContent=`%s`;", id, textContent[:len(textContent)-1])
 	}
 
+	base_id := id + 1
 	for {
+		var to_add int
 		if nextTag, _ := r.Peek(len(stuff[0]) + 1); bytes.Equal([]byte("/"+stuff[0]), nextTag) {
 			r.ReadBytes('>')
 			break
 		}
 
-		out, count = proccessElement(r, out, count)
-		out += fmt.Sprintf("e%d.appendChild(e%d);", this_id, count)
+		out, base_id, to_add = proccessElement(r, out, base_id)
+		out += fmt.Sprintf("e%d.appendChild(e%d);", id, to_add)
 		_, err := r.ReadBytes('<')
 
 		if err != nil {
@@ -139,5 +140,5 @@ func proccessElement(r *bufio.Reader, out string, count int) (string, int) {
 		}
 	}
 
-	return out, count
+	return out, base_id, id
 }
